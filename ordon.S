@@ -133,6 +133,8 @@ _read_algo_err_file:
     movq    $STR_ERR_INVALID_FILE, %rdi
     call    PrintStr
 _end_read_algo:
+    movq    %r12, %rdi
+    call    free
     movq    (%rsp), %r12                # Restoring %r14 value
     addq    $8, %rsp
     leave
