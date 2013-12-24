@@ -60,20 +60,58 @@ _mainEnd:
     leave
     ret
 
+#Var:
+#   Line: %r12
+#   Pos: %r13
+#   Line status: %r14
 ReadFile:
     pushq   %rbp
     movq    %rsp, %rbp
+    subq    $24, %rsp                    # Saving caller-saved regs:
+    movq    %r12, (%rsp)                
+    movq    %r13, 8(%rsp)                
+    movq    %r14, 16(%rsp)               
+
     call    OpenFile
     movq    %rax, STACK_FD(%rbx)            # Saving the FD in the main stack
     cmp     $0, %rax
     je      _errFileOpen
     call    ReadAlgo
 
+    movq    $0, %r13
+_start_while_read_file:                     # do {
+    call    ReadLine
+    movq    %rax, %r12
+    movq    %rdx, %r14
+
+#Test
+#    movq    %r12, %rdi
+#    call    PrintStr
+
+    movq    %r12, %rdi
+    movq    %r13, %rsi
+    call    ReadProcess
+    movq    %r12, %rdi
+    call    free
+    addq    $1, %r13
+    cmpq    $0, %r14
+    jne     _start_while_read_file          # } while( not_last_line( %r14 != 0 ))
+
     jmp     _readFileEnd
 _errFileOpen:
     movq    $STR_ERR_FILE_OPEN, %rdi
     call    PrintStr
 _readFileEnd:
+    movq    8(%rsp), %r13
+    movq    16(%rsp), %r14
+    movq    (%rsp), %r12                # Restoring %r12 value
+    addq    $24, %rsp
+    leave
+    ret
+
+ReadProcess:
+    pushq   %rbp
+    movq    %rsp, %rbp
     leave
     ret
 
@@ -133,7 +171,7 @@ _read_algo_err_file:
     movq    $STR_ERR_INVALID_FILE, %rdi
     call    PrintStr
 _end_read_algo:
-    movq    %r12, %rdi
+    movq    %r12, %rdi                  #free(line)
     call    free
     movq    (%rsp), %r12                # Restoring %r14 value
     addq    $8, %rsp
@@ -150,7 +188,7 @@ _end_read_algo:
 ReadLine:
     pushq   %rbp
     movq    %rsp, %rbp
-    subq    $16, %rsp                    # Saving caller-saved regs:
+    subq    $16, %rsp                   # Saving caller-saved regs:
     movq    %r14, (%rsp)                # %r14
     movq    %r15, 8(%rsp)               # %r15
    
