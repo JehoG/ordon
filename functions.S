@@ -30,14 +30,9 @@ _start_while_str_to_int:
     mul     %rcx
 
     movsbq  (%rdi), %rsi                # %rsi = str[i] - 48  <-- int
-#    movb    %rdi, %dh
     subq     $48, %rsi
     
-#    movq    %rsi, %rax
-#    jmp _end_str_to_int
-
-#    mul     %rcx                    # %rax = %rax * 10
-    addq    %rsi, %rax              # %rax += %rsi
+    addq    %rsi, %rax                  # %rax += %rsi
     addq    $1, %rdi
     addq    $1, %rdx
     jmp     _start_while_str_to_int
