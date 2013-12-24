@@ -68,7 +68,6 @@ ReadFile:
     cmp     $0, %rax
     je      _errFileOpen
     call    ReadAlgo
-    
 
     jmp     _readFileEnd
 _errFileOpen:
@@ -80,8 +79,13 @@ _readFileEnd:
 
 # var:
 #   %r12: line
+# return:
+#   %rax: algo (0:SJFP or 1:RR)
+#   %rdx: quantum
 .AlgSJFP:
     .string "Alg:SJFP"
+.AlgRR:
+    .string "Alg:RR"
 ReadAlgo:
     pushq   %rbp
     movq    %rsp, %rbp
@@ -100,21 +104,29 @@ ReadAlgo:
     movq    $8, %rdx
     call    MemCmp
     cmp     $0, %rax
-    je      _sjfp_read_algo
-#    jne     _end_read_algo
-#    movq    %r12, %rdi
-#    call    PrintStr
-   
+    jne      _sjfp_read_algo
+    movq    %r12, %rdi
+    movq    $.AlgRR, %rsi
+    movq    $6, %rdx
+    call    MemCmp
+    cmp     $0, %rax
+    jne      _rr_read_algo
+    jmp     _read_algo_err_file
+_rr_read_algo:
+    movq    $.AlgRR, %rdi
+    call    PrintStr
 
-
+    movq    %r12, %rdi
+    addq    $7, %rdi
+    call    StrToInt
+    movq    %rax, %rdx
+    movq    $1, %rax
     jmp     _end_read_algo
-#    movq    %rax, %rsi
-#    movq    %rax, %rdi
-#    call    PrintMsgLen
-#    syscall
+
 _sjfp_read_algo:
     movq    $.AlgSJFP, %rdi
     call    PrintStr
+    movq    $0, %rax
     jmp     _end_read_algo
 
 _read_algo_err_file:
