@@ -7,6 +7,50 @@ data_item:
 .equ    STDERR, 2
 
 #Args
+#   str: %rdi
+#Ret:
+#   int: %rax
+#   length: %rdx
+#Var:
+#   value to add: %rsi
+#   10: %rcx
+StrToInt:
+    pushq   %rbp
+    movq    %rsp, %rbp
+
+    movq    $0, %rdx
+    movq    $0, %rax
+    movq    $10, %rcx
+_start_while_str_to_int:
+    cmpb    $57, (%rdi)
+    jg      _end_str_to_int
+    cmpb    $48, (%rdi)
+    jl      _end_str_to_int
+
+    mul     %rcx
+
+    movsbq  (%rdi), %rsi                # %rsi = str[i] - 48  <-- int
+#    movb    %rdi, %dh
+    subq     $48, %rsi
+    
+#    movq    %rsi, %rax
+#    jmp _end_str_to_int
+
+#    mul     %rcx                    # %rax = %rax * 10
+    addq    %rsi, %rax              # %rax += %rsi
+    addq    $1, %rdi
+    addq    $1, %rdx
+    jmp     _start_while_str_to_int
+
+
+
+_end_str_to_int:
+    leave
+    ret
+
+    
+
+#Args
 #   mem1 ptr: %rdi
 #   mem2 ptr: %rsi
 #   mem length: %rdx
