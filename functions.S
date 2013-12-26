@@ -6,6 +6,80 @@ data_item:
 
 .equ    STDERR, 2
 
+#Args:
+#   Str:    %rdi
+#   FinalChar: %rcx
+#Ret:
+#   Substr: %rax
+#   Length: %rdx
+#Var:
+#   Str: %r12
+#   SubStr: %r13
+#   Length: %r14
+#   FinalChar: %r15
+#   Max: %rsi
+SubStrUntil:
+    pushq   %rbp
+    movq    %rsp, %rbp
+    subq    $32, %rsp
+    movq    %r12, (%rsp)
+    movq    %r13, 8(%rsp)
+    movq    %r14, 16(%rsp)
+    movq    %r15, 24(%rsp)
+   
+    movq    %rdi, %r12
+    movq    %rsi, %r15
+    movq    $64, %rdi
+    call    malloc
+    movq    $0, %r14
+    movq    %rax, %r13
+    movq    $64, %rsi
+
+_start_while_sub_str_until:
+    cmpq    %rsi, %rdx 
+    jne     _while_after_realloc
+    shl     %rsi                                # %r13 = realloc(%r13, strlen(%r13)*2)
+    pushq   %rsi
+    movq    %r13, %rdi
+    call    realloc
+    movq    %rax, %r13  
+    popq    %rsi    
+
+_while_after_realloc:
+    cmpb    %r15b, (%r12)
+    je      _end_while_sub_str_until
+    cmpb    $0, (%r12)
+    je      _end_while_sub_str_until
+      
+    movb    (%r12), %cl
+    movb    %cl, (%r13)
+    movq    $0, %rdi
+#   For tests:
+#    movsbq  (%r12), %rdi
+#    call    putchar
+    addq    $1, %r14
+    addq    $1, %r12
+    addq    $1, %r13
+    jmp     _start_while_sub_str_until
+
+_end_while_sub_str_until:
+
+    addq    $1, %r13
+    movb    $0, (%r13)
+    addq    $1, %r14
+    subq    %r14, %r13
+
+    movq    %r13, %rax
+    movq    %r14, %rdx
+
+    movq    24(%rsp), %r15
+    movq    16(%rsp), %r14
+    movq    8(%rsp), %r13
+    movq    (%rsp), %r12
+    addq    $32, %rsp
+    leave
+    ret
+
 #Args
 #   str: %rdi
 #Ret:
