@@ -85,8 +85,8 @@ _start_while_read_file:                     # do {
     movq    %rdx, %r14
 
 #Test
-#    movq    %r12, %rdi
-#    call    PrintStr
+    movq    %r12, %rdi
+    call    PrintStr
 
     movq    %r12, %rdi
     movq    %r13, %rsi
@@ -109,9 +109,165 @@ _readFileEnd:
     leave
     ret
 
+# Vars:
+#   %r12: line
+#   %r13: process
 ReadProcess:
     pushq   %rbp
     movq    %rsp, %rbp
+    subq    $16, %rsp                    # Saving caller-saved regs:
+    movq    %r12, (%rsp)                
+    movq    %r13, 8(%rsp)
+    movq    %rdi, %r12                  # %r12 = line
+
+    movq    $PRO_SIZE, %rdi             # process = malloc(sizeof(process)) -> %r13
+    call    malloc
+    movq    %rax, %r13
+
+    movq    %rsi, PRO_PRIORITY(%r13)    # Saving priority
+
+    movq    %r12, %rdi
+
+    movq    $58, %rsi                   # Getting process ID
+    call    SubStrUntil
+    movq    %rax, PRO_ID(%r13)
+    addq    %rdx, %r12
+
+    movq    %r12, %rdi                  # Getting arrival time
+    call    StrToInt
+    movq    %rax, PRO_ARRIVAL(%r13)
+    addq    %rdx, %r12
+
+    movq    %r12, %rdi                  # Getting activity list
+    movq    %r13, %rsi
+    addq    $PRO_ACT_LIST, %rsi
+    movq    $0, (%rsi)
+    call    ReadActivities
+#    movq    %rax, PRO_ACT_LIST(%r13)
+#   FREE    
+
+_stop:
+    movq    8(%rsp), %r13
+    movq    (%rsp), %r12                # Restoring %r12 value
+    addq    $16, %rsp
+    leave
+    ret
+
+# Params:
+#   Str: %rdi
+# Ret:
+#   Act list: %rax
+# Var:
+#   Char: %rcx
+#   Pointer to the next act: %r12
+#   Pointer to the actual act: %r13
+#   Str: %r14 -----
+#
+.CPU:
+    .string "CPU"
+.IO:
+    .string "E/S"
+.CPUTEST:
+    .string "---CPU\n\0"
+.IOTEST:
+    .string "---E/S\n\0"
+
+ReadActivities:
+    pushq   %rbp
+    movq    %rsp, %rbp
+    subq    $24, %rsp
+    movq    %r12, (%rsp)
+    movq    %r13, 8(%rsp)
+    movq    %r14, 16(%rsp)
+
+    movq    %rdi, %r14
+    movq    %rsi, %r12
+
+_start_while_read_activities:
+    cmpb    $0, (%r14)
+    je      _end_while_read_activities
+    cmpb    $10, (%r14)
+    je      _end_while_read_activities
+    cmpb    $-1, (%r14)
+    je      _end_while_read_activities
+   
+
+#    movq    %r14, %rdi
+#    call    PrintStr
+    addq    $1, %r14
+
+
+    movq    ACT_SIZE, %rdi
+    call    malloc
+    movq    %rax, (%r12)                    # actual_act = malloc(sizeof(act)) 
+    
+
+    movq    %rax, %r13
+    movq    %r13, %r12
+#    addq    $ACT_NEXT, %r12                  # next_act = &actual_act->next
+    addq    $8, %r12
+   
+    movq    $.CPU, %rdi
+    movq    %r14, %rsi
+    movq    $3, %rdx
+    call    MemCmp
+    cmp     $0, %rax
+    je      _read_act_check_io
+
+    movq    $.CPUTEST, %rdi
+    call    PrintStr
+
+    movq    $1, (%r13)
+    jmp     _read_act_exec_time
+_read_act_check_io:
+    movq    $.IO, %rdi
+    movq    %r14, %rsi
+    movq    $3, %rdx
+    call    MemCmp
+    cmp     $0, %rax
+    je      _read_act_invalid_file
+
+    movq    $.IOTEST, %rdi
+    call    PrintStr
+
+    movq    $0, (%r13)
+
+_read_act_exec_time:
+    addq    $4, %r14
+
+    movq    %r14, %rdi
+    call    StrToInt
+
+    pushq   %rdx
+
+#    movq    %r14, %rdi
+#    call    PrintStr
+
+    cmpb     $10, 1(%r14)
+    jne     _end
+
+    movq    $STR_ERR_NB_ARG, %rdi
+    call    PrintStr
+
+_end:
+    popq    %rdx
+    addq    %rdx, %r14
+
+#    cmpb    $58, (%rdi)
+#    jne     _start_while_read_activities 
+#    addq    $1, %rdi
+    jmp     _start_while_read_activities
+
+_read_act_invalid_file:
+    movq    $STR_ERR_INVALID_FILE, %rdi
+    call    PrintStr
+
+_end_while_read_activities:
+
+    movq    16(%rsp), %r14
+    movq    8(%rsp), %r13
+    movq    (%rsp), %r12
+    addq    $24, %rsp
     leave
     ret
 

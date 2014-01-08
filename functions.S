@@ -67,9 +67,11 @@ _end_while_sub_str_until:
     addq    $1, %r13
     movb    $0, (%r13)
     addq    $1, %r14
+    movq    %r14, %rsi                  #   Realloc the str with the good size
     subq    %r14, %r13
+    movq    %r13, %rdi
+    call    realloc
 
-    movq    %r13, %rax
     movq    %r14, %rdx
 
     movq    24(%rsp), %r15
@@ -92,16 +94,20 @@ StrToInt:
     pushq   %rbp
     movq    %rsp, %rbp
 
+
     movq    $0, %rdx
     movq    $0, %rax
     movq    $10, %rcx
+
 _start_while_str_to_int:
     cmpb    $57, (%rdi)
     jg      _end_str_to_int
     cmpb    $48, (%rdi)
     jl      _end_str_to_int
 
+    pushq   %rdx
     mul     %rcx
+    popq    %rdx
 
     movsbq  (%rdi), %rsi                # %rsi = str[i] - 48  <-- int
     subq     $48, %rsi
@@ -188,6 +194,21 @@ _startStrLen:
 
 _endStrLen:
     movq    %rsi, %rax
+    leave
+    ret
+
+#Param:
+#   %rdi:   int
+#Var:
+#   %
+
+IntToStr: 
+    pushq   %rbp
+    movq    %rsp, %rbp
+
+    
+    
+
     leave
     ret
 
